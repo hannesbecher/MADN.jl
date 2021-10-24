@@ -57,16 +57,24 @@ The function called each turn to update the game's state.
 function oneTurn!(gm::Game; print=false)
     # roll a die
     d = rand(1:6)
+
+
     # move current player according to their strategy
+
+
     # increment turn counter
     gm.turn += 1
+    
+    
     # update whoseTurn to next player
     gm.whoseTurn = (gm.whoseTurn % 4) + 1
+    
+    
     # optionally print state
     if print==true
+        run(`clear`)
         printGameState(gm)
+        sleep(0.05)
     end
-    # optionally wait
-
-
+    
 end
