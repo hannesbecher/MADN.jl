@@ -1,0 +1,4 @@
+name = "MADN"
+uuid = "645280ef-32ac-4e30-a352-f98679936d27"
+authors = ["hannesbecher <hannesbecher@gmx.de>"]
+version = "0.1.0"
