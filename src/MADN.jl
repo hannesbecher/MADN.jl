@@ -9,7 +9,7 @@ export setupGame,
        otherOnBf,
        isStartField,
        myPiecePositions,
-       myPiecePositionDict
+       myPiecePositionStruct
 
 
 

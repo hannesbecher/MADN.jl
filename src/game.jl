@@ -55,12 +55,10 @@ end
 The function called each turn to update the game's state.
 """
 function oneTurn!(gm::Game; print=false)
-    # roll a die
-    d = rand(1:6)
-
-
-    # move current player according to their strategy
-
+    
+    # roll die and decide what to do
+    rollAndMove(gm)
+    
 
     # increment turn counter
     gm.turn += 1
@@ -77,4 +75,20 @@ function oneTurn!(gm::Game; print=false)
         sleep(0.05)
     end
     
+end
+
+"""
+```
+    rollAndMoce(gm, att=1)
+```
+Roll die and decide what to do.
+"""
+function rollAndMove(gm, att=1)
+    # roll a die
+    d = rand(1:6)
+
+    pcs = myPiecePositionDict(gm)
+
+    # move current player according to their strategy
+
 end

@@ -51,15 +51,25 @@ isInGoal(x) = (x > 56)
 """
 Return a vector of the board fields of all of the active player's pieces.
 """
-function myPiecePositions(gm)
-    [i for i in 1:72 if gm.board[i].player == gm.whoseTurn]
+function playerPiecePositions(gm, pl)
+    [i for i in 1:72 if gm.board[i].player == pl]
 end
 
- """
-# Return the posistions of all of the active player's pieces in a Dict with keys `waiting`, `inGame`, and `goal`.
-# """
-function myPiecePositionDict(gm)
-     Dict("waiting" => filter(isWaiting, myPiecePositions(gm)),
-          "inGame" => filter(isInGame, myPiecePositions(gm)),
-          "goal" => filter(isInGoal, myPiecePositions(gm)))
+"""
+Pice position struct
+"""
+struct PPS
+    waiting::Vector{Int}
+    inGame::Vector{Int}
+    inGoal::Vector{Int}
+end
+
+"""
+Return the board posistions of all of the active player's pieces in a Dict with keys `waiting`, `inGame`, and `goal`.
+"""
+function myPiecePositionStruct(gm)
+     PPS(filter(isWaiting, playerPiecePositions(gm, gm.whoseTurn)),
+         filter(isInGame, playerPiecePositions(gm, gm.whoseTurn)),
+         filter(isInGoal, playerPiecePositions(gm, gm.whoseTurn)))
  end
+
