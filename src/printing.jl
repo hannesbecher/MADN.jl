@@ -192,3 +192,14 @@ function printBoard(brd)
     nl()
     nl()
 end
+
+"""
+```
+    printGameState(gm::Game)
+```
+Print the state of the game including board, turn, and player.
+"""
+function printGameState(gm::Game)
+    print("Turn $(gm.turn), player $(gm.whoseTurn).\n\n")
+    printBoard(gm.board)
+end
