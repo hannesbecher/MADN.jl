@@ -38,6 +38,11 @@ mutable struct Game
     playerPos::Vector{Int} 
 end
 
+
+whoseTurn(gm::Game) = gm.whoseTurn
+
+Base.show(io::IO, gm::Game) = print(io, "(Turn: ", gm.turn, ", Whose turn: ", gm.whoseTurn, ", Positions: ", gm.playerPos, ")")
+
 """
 ```
     setupGame(nPl)

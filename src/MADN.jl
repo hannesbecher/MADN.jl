@@ -1,15 +1,31 @@
 module MADN
 
 export setupGame,
-       printGameState,
-       oneTurn!,
+        printGameState,
+        oneTurn!,
+        whoseTurn,
+ 
+        whoOnBf,
+        iOnBf,
+        otherOnBf,
+        isStartField,
+        myPiecePositions,
+        piecePositionStruct,
+        myPiecePositionStruct,
 
-       whoOnBf,
-       iOnBf,
-       otherOnBf,
-       isStartField,
-       myPiecePositions,
-       myPiecePositionStruct
+        kickBackToWhere,
+        startFromWhere,
+        swapPieces!,
+
+        playerOnBF,
+        iOnBF,
+        otherOnBF,
+        kickOut,
+        moveAndKick,
+        noGapsInGoal,
+
+        bf2pf
+
 
 
 

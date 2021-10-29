@@ -3,10 +3,18 @@ function bf2pf(bf::Int, plNum::Int)
     bf > 72 && error("Board field cannot be > 72.")
     if bf < 41
         return ((5 - plNum) * 10 + bf) % 40
+    elseif bf > 56
+        if (bf < 57 + (plNum-1) * 4) | (bf > 56 + (plNum) * 4)
+            error("BF $bf is a goal field, but not of player $plNum")
+        else
+            return 40 + mod1(bf, 4)
+        end
+    else
+        error("Player field not defined for waiting area fileds.")
     end
-    # add goal fields
-    
 end
+
+
 
 ###################
 # sensing functions
@@ -64,12 +72,123 @@ struct PPS
     inGoal::Vector{Int}
 end
 
+
+Base.show(io::IO, mps::PPS) = print(io, "(Waiting: ", mps.waiting, ", In game: ", mps.inGame, ", In goal: ", mps.inGoal, ")")
+
+
+function piecePositionStruct(gm, pl)
+    PPS(filter(isWaiting, playerPiecePositions(gm, pl)),
+        filter(isInGame, playerPiecePositions(gm, pl)),
+        filter(isInGoal, playerPiecePositions(gm, pl)))
+end
+
+
+
 """
 Return the board posistions of all of the active player's pieces in a Dict with keys `waiting`, `inGame`, and `goal`.
 """
-function myPiecePositionStruct(gm)
-     PPS(filter(isWaiting, playerPiecePositions(gm, gm.whoseTurn)),
-         filter(isInGame, playerPiecePositions(gm, gm.whoseTurn)),
-         filter(isInGoal, playerPiecePositions(gm, gm.whoseTurn)))
- end
+myPiecePositionStruct(gm) = piecePositionStruct(gm, gm.whoseTurn)
 
+"""
+```
+    kickBackToWhere(gm, pl)
+```
+Board field to move a kicked-out of player `pl`piece to
+"""
+function kickBackToWhere(gm, pl)
+    waitingPieces = piecePositionStruct(gm, pl).waiting
+    length(waitingPieces) > 3 && error("Cannot kick when more than 3 pieces are in waiting space.")
+    return maximum(waitingPieces) + 1
+end
+
+"""
+```
+    swapPieces!(gm, fr, to)
+```
+Swap pieces of game `gm` between board fields `fr` and `to`. The secon is meant to be a ghost piece.
+"""
+function swapPieces!(gm, fr, to)
+    gm.board[fr], gm.board[to] = gm.board[to], gm.board[fr]
+end
+
+"""
+```
+    startFromWhere(gm, pl)
+```
+Board field of game `gm` from where to move a piece of player `pl` into the game.
+"""
+function startFromWhere(gm, pl)
+    waitingPieces = piecePositionStruct(gm, pl).waiting
+    length(waitingPieces) == 0 && error("Cannot move out. Nobody's waiting.")
+    return maximum(waitingPieces)
+end
+
+
+"""
+```
+    playerOnBF(gm, bf)
+```
+Return player id of the piece on board field `bf` in game `gm`
+"""
+function playerOnBF(gm, bf)
+    return gm.board[bf].player
+end
+
+"""
+```
+    iOnBF(gm, bf)
+```
+Return whether currently acitve player from game `gm` has a piece on board field `bf`
+"""
+function iOnBF(gm, bf)
+    return playerOnBF(gm, bf) == whoseTurn(gm)
+end
+
+"""
+```
+    otherOnBF(gm, bf)
+```
+Return whether a player except for the currently acitve one from game `gm` has a piece on board field `bf`
+"""
+function otherOnBF(gm, bf)
+    return playerOnBF(gm, bf) in filter(x-> x != whoseTurn(gm), [1,2,3,4])
+end
+
+"""
+```
+    kickOut(gm, bf)
+```
+Kick out a piece from board field `bf` of game `gm` to its corresponding waiting position
+"""
+function kickOut(gm, bf)
+    # add recording corde here
+    swapPieces!(gm,
+    bf,
+    kickBackToWhere(gm, playerOnBF(gm, bf))
+    )
+end
+
+"""
+```
+    moveAndKick(gm, fr, to)
+```
+Move piece in game `gm` from board field `fr` to `to`. Kick out of there is apiece on `to`.
+"""
+function moveAndKick(gm, fr, to)
+    otherOnBF(gm, to) && kickOut(gm, to)
+    swapPieces!(gm, fr, to)
+end
+
+"""
+```
+    noGapsInGoal(gm, pl)
+```
+Test whether player `pl` in game `gm` has gaps in their goal. I.e., whether there are pieces on their goal fields one (or more) of which could be moved further.
+"""
+function noGapsInGoal(gm, pl)
+    
+    #piecePositionStruct(gm, pl).inGoal
+    # convert to player field
+    # see whether min of there is < (45 - length(goal pieces))
+        # if soe, there are gaps!
+end
