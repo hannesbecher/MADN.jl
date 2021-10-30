@@ -38,11 +38,13 @@ mutable struct Game
     playerPos::Vector{Int} 
 end
 
+import Base.print
+
 """
 ```
     print(gm::Game)
 ```
-Prints that sata of game `gm` (by calling `printGameState`).
+Prints that satus of game `gm` (by calling `printGameState`).
 """
 function print(gm::Game)
     printGameState(gm::Game)
@@ -51,7 +53,7 @@ end
 
 whoseTurn(gm::Game) = gm.whoseTurn
 
-Base.show(io::IO, gm::Game) = print(io, "(Turn: ", gm.turn, ", Whose turn: ", gm.whoseTurn, ", Positions: ", gm.playerPos, ")")
+Base.show(io::IO, gm::Game) = print(io, "Game object (Turn: ", gm.turn, ", Whose turn: ", gm.whoseTurn, ", Positions: ", gm.playerPos, ")")
 
 """
 ```
@@ -103,10 +105,13 @@ function rollAndMove!(gm, att=1)
     d = rand(1:6)
 
     bfs = myPiecePositionStruct(gm) # board fields
-
+    
+    # concatenate non-waiting fields, convert to pf, add number rolled
     pfs = bf2pf.(vcat(bfs.inGoal, bfs.inGame), gm.whoseTurn) .+ d
     
-    
+    aimBfs = pf2bf.(pfs)
+
+    senseFields = (!).(isnothing.(aimBfs))
 
     
     println(pfs)

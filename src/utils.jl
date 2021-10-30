@@ -15,9 +15,11 @@ function bf2pf(bf::Int, pl::Int)
 end
 
 function pf2bf(pf, pl)
-    pf < 1 | pf > 44 && error("Player field has to be within range [1, 44] ")
-    if pf < 41
+    # No error is thrown if the pf is nonsense!
+    if 0 < pf < 41 # in game
         return mod1((pf + (pl - 1) * 10), 40)
+    elseif 56 < pf < 73 # goal field
+        return pf + 16 + (pl-1)*4
     end
 end
 
