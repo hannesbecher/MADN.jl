@@ -102,20 +102,61 @@ Roll die and decide what to do.
 """
 function rollAndMove!(gm, att=1)
     # roll a die
-    d = rand(1:6)
-
+    #d = rand(1:6)
+    d = 6 # for debug
     bfs = myPiecePositionStruct(gm) # board fields
     
     # concatenate non-waiting fields, convert to pf, add number rolled
-    pfs = bf2pf.(vcat(bfs.inGoal, bfs.inGame), gm.whoseTurn) .+ d
+    pfs = bf2pf.(vcat(bfs.inGoal, bfs.inGame), whoseTurn(gm))
     
-    aimBfs = pf2bf.(pfs)
+    # true if a piece is on a player's own start field
+    on1 = pfs .== 1
 
-    senseFields = (!).(isnothing.(aimBfs))
+    # test of subsequent fields six steps away are occupied, too
+    if any(x -> x==true, pfs .== 1) & any(x -> x==true, pfs .== 7)
+        if any(x -> x==true, pfs .== 1) & any(x -> x==true, pfs .== 7) & any(x -> x==true, pfs .== 13)
+            on1and7and13 = pfs .== 13
+            on1and7 = fill(1, size(pfs))
+        else # only 7
+            on1and7 = pfs .== 7
+            on1and7and13 = fill(1, size(pfs))
+        end # if 13
+    else # neither
+        on1and7 = fill(1, size(pfs))
+        on1and7and13 = fill(1, size(pfs))
+    end
+
+    # board field numbers of aim fields
+    aimBfs = pf2bf.(pfs .+ 6, whoseTurn(gm))
+
+    # index of whether aim fields are sensible, i.e. < pf 45
+    aims44 = aimBfs .!= -1 # 
+
+    # index of whetehr the player themselves is not the aim fileds
+    # if they're on, returns 0/false
+    selfOnAim = [!iOnBf(gm, i) for i in aimBfs]
+    # selfOnAim = (!).(iOnBf.(gm, aimBfs))
+
+    # index of whetehr another player is not the aim fileds
+    # if they're on, returns 1/true
+    otherOnAim = [!otherOnBf(gm, i) for i in aimBfs]
 
     
+    # true for a piece on a player's own start field
+    onOtherStartField = [i in [11, 21, 32] for i in pfs]
+
+    # true is piece on goal field
+    onGoalField = pfs .> 40
     println(pfs)
-
-    # move current player according to their strategy
+    println(aimBfs)
+    println(on1)
+    println(on1and7)
+    println(on1and7and13)
+    println(aims44)
+    println(selfOnAim)
+    println(otherOnAim)
+    println(onOtherStartField)
+    println(onGoalField)
+    # # move current player according to their strategy
 
 end

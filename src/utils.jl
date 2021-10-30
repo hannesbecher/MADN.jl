@@ -21,6 +21,7 @@ function pf2bf(pf, pl)
     elseif 56 < pf < 73 # goal field
         return pf + 16 + (pl-1)*4
     end
+    return -1
 end
 
 ###################
@@ -33,20 +34,6 @@ Return player number of piece on board field. Zero if field is 'empty' (ghost pi
 function whoOnBf(gm, bf)
     if bf>72 error("Board field cannot be greater than 72.") end
     return gm.board[bf].player
-end
-
-"""
-Given state of the game, does the piece on `bf` belong to the current player?
-"""
-function iOnBf(gm, bf)
-    return gm.board[bf].player == gm.whoseTurn
-end
-
-"""
-Given state of the game, does the piece on `bf` belong to any but the current player? Returns `false` if field is empty.
-"""
-function otherOnBf(gm, bf)
-    return gm.board[bf].player in filter(x -> x != gm.whoseTurn, [1,2,3,4])
 end
 
 """
@@ -118,6 +105,7 @@ Swap pieces of game `gm` between board fields `fr` and `to`. The secon is meant 
 """
 function swapPieces!(gm, fr, to)
     gm.board[fr], gm.board[to] = gm.board[to], gm.board[fr]
+    return nothing
 end
 
 """
@@ -140,26 +128,27 @@ end
 Return player id of the piece on board field `bf` in game `gm`
 """
 function playerOnBF(gm, bf)
+    bf == -1 && return 0
     return gm.board[bf].player
 end
 
 """
 ```
-    iOnBF(gm, bf)
+    iOnBf(gm, bf)
 ```
 Return whether currently acitve player from game `gm` has a piece on board field `bf`
 """
-function iOnBF(gm, bf)
+function iOnBf(gm, bf)
     return playerOnBF(gm, bf) == whoseTurn(gm)
 end
 
 """
 ```
-    otherOnBF(gm, bf)
+    otherOnBf(gm, bf)
 ```
 Return whether a player except for the currently acitve one from game `gm` has a piece on board field `bf`
 """
-function otherOnBF(gm, bf)
+function otherOnBf(gm, bf)
     return playerOnBF(gm, bf) in filter(x-> x != whoseTurn(gm), [1,2,3,4])
 end
 
@@ -210,3 +199,4 @@ Test whether player `pl` has all their pieces in their goal range.
 function hasPlFinished(gm, pl)
     return length(piecePositionStruct(gm, pl).inGoal) == 4
 end
+
