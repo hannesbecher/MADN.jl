@@ -1,11 +1,11 @@
 
-function bf2pf(bf::Int, plNum::Int)
+function bf2pf(bf::Int, pl::Int)
     bf > 72 && error("Board field cannot be > 72.")
     if bf < 41
-        return ((5 - plNum) * 10 + bf) % 40
+        return mod1(((5 - pl) * 10 + bf), 40)
     elseif bf > 56
-        if (bf < 57 + (plNum-1) * 4) | (bf > 56 + (plNum) * 4)
-            error("BF $bf is a goal field, but not of player $plNum")
+        if (bf < 57 + (pl-1) * 4) | (bf > 56 + (pl) * 4)
+            error("BF $bf is a goal field, but not of player $pl")
         else
             return 40 + mod1(bf, 4)
         end
@@ -14,7 +14,12 @@ function bf2pf(bf::Int, plNum::Int)
     end
 end
 
-
+function pf2bf(pf, pl)
+    pf < 1 | pf > 44 && error("Player field has to be within range [1, 44] ")
+    if pf < 41
+        return mod1((pf + (pl - 1) * 10), 40)
+    end
+end
 
 ###################
 # sensing functions
@@ -75,7 +80,9 @@ end
 
 Base.show(io::IO, mps::PPS) = print(io, "(Waiting: ", mps.waiting, ", In game: ", mps.inGame, ", In goal: ", mps.inGoal, ")")
 
-
+"""
+A type to store where one player's pieces are on the board
+"""
 function piecePositionStruct(gm, pl)
     PPS(filter(isWaiting, playerPiecePositions(gm, pl)),
         filter(isInGame, playerPiecePositions(gm, pl)),
@@ -181,14 +188,23 @@ end
 
 """
 ```
-    noGapsInGoal(gm, pl)
+    gapsInGoal(gm, pl)
 ```
 Test whether player `pl` in game `gm` has gaps in their goal. I.e., whether there are pieces on their goal fields one (or more) of which could be moved further.
 """
-function noGapsInGoal(gm, pl)
+function gapsInGoal(gm, pl)
+    pfs = bf2pf.(piecePositionStruct(gm, pl).inGoal, pl) # get piece positions in goan and convert to player fields
+    length(pfs) < 1 && error("There seem to be no pieces in player $pl's goal.")
+    return minimum(pfs) < 45 - length(pfs)
     
-    #piecePositionStruct(gm, pl).inGoal
-    # convert to player field
-    # see whether min of there is < (45 - length(goal pieces))
-        # if soe, there are gaps!
+end
+
+"""
+```
+    hasPlFinished(gm, pl)
+```
+Test whether player `pl` has all their pieces in their goal range.
+"""
+function hasPlFinished(gm, pl)
+    return length(piecePositionStruct(gm, pl).inGoal) == 4
 end

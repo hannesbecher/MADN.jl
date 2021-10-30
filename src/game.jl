@@ -38,6 +38,16 @@ mutable struct Game
     playerPos::Vector{Int} 
 end
 
+"""
+```
+    print(gm::Game)
+```
+Prints that sata of game `gm` (by calling `printGameState`).
+"""
+function print(gm::Game)
+    printGameState(gm::Game)
+    return nothing
+end
 
 whoseTurn(gm::Game) = gm.whoseTurn
 
@@ -62,7 +72,7 @@ The function called each turn to update the game's state.
 function oneTurn!(gm::Game; print=false)
     
     # roll die and decide what to do
-    rollAndMove(gm)
+    rollAndMove!(gm)
     
 
     # increment turn counter
@@ -70,13 +80,13 @@ function oneTurn!(gm::Game; print=false)
     
     
     # update whoseTurn to next player
-    gm.whoseTurn = (gm.whoseTurn % 4) + 1
+    gm.whoseTurn = mod1(gm.whoseTurn + 1, 4)
     
     
     # optionally print state
     if print==true
         run(`clear`)
-        printGameState(gm)
+        print(gm)
         sleep(0.05)
     end
     
@@ -84,15 +94,22 @@ end
 
 """
 ```
-    rollAndMoce(gm, att=1)
+    rollAndMove!(gm, att=1)
 ```
 Roll die and decide what to do.
 """
-function rollAndMove(gm, att=1)
+function rollAndMove!(gm, att=1)
     # roll a die
     d = rand(1:6)
 
-    pcs = myPiecePositionDict(gm)
+    bfs = myPiecePositionStruct(gm) # board fields
+
+    pfs = bf2pf.(vcat(bfs.inGoal, bfs.inGame), gm.whoseTurn) .+ d
+    
+    
+
+    
+    println(pfs)
 
     # move current player according to their strategy
 
