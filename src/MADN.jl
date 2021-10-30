@@ -24,7 +24,7 @@ export setupGame,
 
        swapPieces!,       
        kickOut,
-       moveAndKick,
+       moveAndKick!,
        rollAndMove!,
        
        Game

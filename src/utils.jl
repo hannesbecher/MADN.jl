@@ -168,11 +168,11 @@ end
 
 """
 ```
-    moveAndKick(gm, fr, to)
+    moveAndKick!(gm, fr, to)
 ```
 Move piece in game `gm` from board field `fr` to `to`. Kick out of there is apiece on `to`.
 """
-function moveAndKick(gm, fr, to)
+function moveAndKick!(gm, fr, to)
     otherOnBF(gm, to) && kickOut(gm, to)
     swapPieces!(gm, fr, to)
 end

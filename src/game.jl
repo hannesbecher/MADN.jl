@@ -96,67 +96,103 @@ end
 
 """
 ```
+    chooseAndMove!(dat, pl::Player, att, d)
+```
+To be called by rollAndMove to pick which piece to move (if any) given player `pl`'s strategy.
+"""
+function chooseAndMove!(dat::Intelligence, pl::Player, att, d)
+    # if none can be moved
+        #if d != 6 and att < 1, call rollAndMove(gm, att+1)
+    # else pass
+
+    # if some can be moved, sugget which depending on dat and player strategy
+        # and move
+
+    return nothing
+end
+
+
+struct Intelligence
+    bfs::PPS
+    pfs::Vector
+    aimBfs::Vector
+    aims44::Vector # no-nonsense aims, multiply
+    myStart::Vector # highest priority
+    kick::Vector #*
+    fFS::Vector # *free foreign start
+    aFS::Vector # *avoid foreign start
+    aGS::Vector # *avoid goal shuffling
+    eG::Vector # *enter goal
+    fP::Vector # *my furthest-ahead piece
+end
+
+function gatherIntelligence(gm::Game)
+    Intelligence(myPiecePositionStruct(gm), # bfs (PPS)
+                 bf2pf.(vcat(bfs.inGoal, bfs.inGame), whoseTurn(gm)), #pfs
+                 pf2bf.(pfs .+ d, whoseTurn(gm)), # aim bfs
+                 aimBfs .!= -1 # aims44 
+                 # other vectors
+                 # true if a piece is on a player's own start field
+    #on1 = pfs .== 1
+
+
+    # index of whetehr the player themselves is not the aim fileds
+    # if they're on, returns 0/false
+    #selfOnAim = [!iOnBf(gm, i) for i in aimBfs]
+    # selfOnAim = (!).(iOnBf.(gm, aimBfs))
+
+    # index of whetehr another player is not the aim fileds
+    # if they're on, returns 1/true
+    #otherOnAim = [!otherOnBf(gm, i) for i in aimBfs]
+
+    
+    # true for a piece on a player's own start field
+    #onOtherStartField = [i in [11, 21, 32] for i in pfs]
+
+    # true is piece on goal field
+    #onGoalField = pfs .> 40
+    
+                 )
+end
+
+"""
+```
     rollAndMove!(gm, att=1)
 ```
 Roll die and decide what to do.
 """
 function rollAndMove!(gm, att=1)
     # roll a die
-    #d = rand(1:6)
-    d = 6 # for debug
-    bfs = myPiecePositionStruct(gm) # board fields
-    
-    # concatenate non-waiting fields, convert to pf, add number rolled
-    pfs = bf2pf.(vcat(bfs.inGoal, bfs.inGame), whoseTurn(gm))
-    
-    # true if a piece is on a player's own start field
-    on1 = pfs .== 1
+    d = rand(1:6)
+    #d = 6 # for debug
+    itg = gatherIntelligence(gm)
 
-    # test of subsequent fields six steps away are occupied, too
-    if any(x -> x==true, pfs .== 1) & any(x -> x==true, pfs .== 7)
-        if any(x -> x==true, pfs .== 1) & any(x -> x==true, pfs .== 7) & any(x -> x==true, pfs .== 13)
-            on1and7and13 = pfs .== 13
-            on1and7 = fill(1, size(pfs))
-        else # only 7
-            on1and7 = pfs .== 7
-            on1and7and13 = fill(1, size(pfs))
-        end # if 13
-    else # neither
-        on1and7 = fill(1, size(pfs))
-        on1and7and13 = fill(1, size(pfs))
+    if d == 6
+        if length(itg.bfs.waiting) > 0 # any waiting to move out?
+            if 1 in pfs # if current pl on their start
+                # ADD! chooseAndMove!(itg, gm.players[whoseTurn(gm)], att, d)
+                gm.turn += 1
+                rollAndMove!(gm) # 2nd turn
+                return nothing
+            else # curent pl not on their start, move out!
+                moveAndKick!(gm, 
+                             startFromWhere(gm, whoseTurn(gm)),
+                             pf2bf(1, whoseTurn(gm))
+                             )
+
+                gm.turn += 1
+                rollAndMove!(gm) # 2nd turn
+                return nothing
+            end
+        else # no-one's waiting
+            # ADD chooseAndMove!(itg, gm.players[whoseTurn(gm)], att, d)
+            gm.turn += 1
+            rollAndMove!(gm)  # 2nd turn
+            return nothing
+        end
+    else
+        # ADD! chooseAndMove!(itg, gm.players[whoseTurn(gm)], att, d)
     end
-
-    # board field numbers of aim fields
-    aimBfs = pf2bf.(pfs .+ 6, whoseTurn(gm))
-
-    # index of whether aim fields are sensible, i.e. < pf 45
-    aims44 = aimBfs .!= -1 # 
-
-    # index of whetehr the player themselves is not the aim fileds
-    # if they're on, returns 0/false
-    selfOnAim = [!iOnBf(gm, i) for i in aimBfs]
-    # selfOnAim = (!).(iOnBf.(gm, aimBfs))
-
-    # index of whetehr another player is not the aim fileds
-    # if they're on, returns 1/true
-    otherOnAim = [!otherOnBf(gm, i) for i in aimBfs]
-
-    
-    # true for a piece on a player's own start field
-    onOtherStartField = [i in [11, 21, 32] for i in pfs]
-
-    # true is piece on goal field
-    onGoalField = pfs .> 40
-    println(pfs)
-    println(aimBfs)
-    println(on1)
-    println(on1and7)
-    println(on1and7and13)
-    println(aims44)
-    println(selfOnAim)
-    println(otherOnAim)
-    println(onOtherStartField)
-    println(onGoalField)
-    # # move current player according to their strategy
+    return nothing
 
 end
