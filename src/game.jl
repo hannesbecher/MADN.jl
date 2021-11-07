@@ -71,7 +71,7 @@ end
 ```
 The function called each turn to update the game's state.
 """
-function oneTurn!(gm::Game; print=false)
+function oneTurn!(gm::Game; prnt=false)
     
     # roll die and decide what to do
     rollAndMove!(gm)
@@ -86,21 +86,127 @@ function oneTurn!(gm::Game; print=false)
     
     
     # optionally print state
-    if print==true
-        run(`clear`)
+    if prnt==true
+        #run(`clear`)
         print(gm)
         sleep(0.05)
     end
     
 end
 
+struct Intelligence
+    pps::PPS
+    bfs::Vector
+    pfs::Vector
+    aimBfs::Vector
+    aims44::Vector # no-nonsense aims, multiply
+    iOnAim::Vector # no-nonsense aims, multiply
+
+    # for weights
+    weights::Matrix{Int}
+    # myStart::Vector # highest priority
+    # kick::Vector #*
+    # fFS::Vector # *free foreign start
+    # aFS::Vector # *avoid foreign start
+    # aGS::Vector # *avoid goal shuffling
+    # eG::Vector # *enter goal
+    # fP::Vector # *my furthest-ahead piece not in goal
+end
+
+Base.show(io::IO, itl::Intelligence) = print(io, "Intelligence object (PPS: ", itl.bfs,
+    ", player fields: ", itl.pfs,
+    ", aim BFs: ", itl.aimBfs,
+    ", aims OK: ", itl.aims44,
+    ", I not on aim: ", itl.iOnAim,
+    ", weights: ", itl.weights,
+    # ", kickable aim: ", itl.kick,
+    # ", leave foreign start: ", itl.fFS,
+    # ", enter foreign start: ", itl.aFS,
+    # ", enter goal: ", itl.eG,
+    # ", furthest-ahead non-goal: ", itl.fP,
+    ")")
+
+
+
 """
 ```
-    chooseAndMove!(dat, pl::Player, att, d)
+    gatherIntelligence(gm::Game, d)
+```
+Explore state of the game `gm`, assuming that a number `d` was rolled. Only run if there are pieces `inGame` or `inGoal`.
+"""
+function gatherIntelligence(gm::Game, d)
+    pps = myPiecePositionStruct(gm)
+    bfs = vcat(pps.inGoal, pps.inGame) # only those in game or goal
+    pfs = bf2pf.(bfs, whoseTurn(gm)) # only those in game or goal
+    aims = pf2bf.(pfs .+ d, whoseTurn(gm)) # these are board fields
+    isInGoal = pfs .> 40
+    aimInGoal = (pfs .+ d) .> 40
+    println("In Game: $(length(pps.inGame))")
+    if length(pps.waiting) < 4
+        println("Some inGame")
+        pfs .== 1#myStart
+        map(x -> otherOnBf(gm, x), aims)
+        map(x -> x in [11, 21, 31], pfs)
+        map(x -> x+d in [11, 21, 31], pfs)
+        isInGoal .& aimInGoal
+        (!).(isInGoal) .& aimInGoal
+        println("Collect bit")
+        collect(pfs .== maximum(pfs))
+        println("Collect bit done")
+        return Intelligence(pps, # PPS (has board fields)
+                     bfs,
+                     pfs, # player fields of inGame and inGoal
+                     aims, # aims of these as bfs
+                     aims .!= -1, # whether aims make sense
+                     map(x -> !iOnBf(gm, x), aims), # whether player is not on goal field
+                     # weightings
+                     hcat(
+                     pfs .== 1,#myStart
+                     map(x -> otherOnBf(gm, x), aims), # Kickable aim?
+                     map(x -> x in [11, 21, 31], pfs), # any of mine on a foreightn start field?
+                     map(x -> x+d in [11, 21, 31], pfs), # any of mine heading for a foreign start field?
+                     isInGoal .& aimInGoal,# in goal and heading for goal?
+                     (!).(isInGoal) .& aimInGoal, # entering goal 
+                     collect(pfs .== maximum(pfs))
+                     )
+                     
+        )
+    else
+        println("None inGame")
+        return Intelligence(pps, # PPS (has board fields)
+        bfs,
+        pfs, # player fields of inGame and inGoal
+        aims, # aims of these as bfs
+        aims .!= -1, # whether aims make sense
+        map(x -> !iOnBf(gm, x), aims), # whether player is not on goal field
+        # weightings
+        zeros(Int, (7,0))
+        
+)
+    end
+end
+
+
+
+"""
+```
+    chooseAndMove!(dat, gm::Game, att, d)
 ```
 To be called by rollAndMove to pick which piece to move (if any) given player `pl`'s strategy.
 """
-function chooseAndMove!(dat::Intelligence, pl::Player, att, d)
+function chooseAndMove!(itg::Intelligence, gm::Game, att, d)
+    if (length(itg.bfs) == 0)
+        if att < 3
+            rollAndMove!(gm, att+1)
+        end
+        return nothing
+    end
+    pw = pieceWeights(gm.players[gm.whoseTurn].strategy, itg)
+    println(pw) # for debug
+    scInd = findall(x -> x == maximum(pw), pw)
+    indVec = collect(1:length(itg.pfs))[scInd] # indices of highest weights
+    ind = ifelse(length(indVec) > 1, rand(indVec), indVec[1]) # in case of ties, select randomly
+    moveAndKick!(gm, itg.bfs[ind], itg.aimBfs[ind])
     # if none can be moved
         #if d != 6 and att < 1, call rollAndMove(gm, att+1)
     # else pass
@@ -112,48 +218,8 @@ function chooseAndMove!(dat::Intelligence, pl::Player, att, d)
 end
 
 
-struct Intelligence
-    bfs::PPS
-    pfs::Vector
-    aimBfs::Vector
-    aims44::Vector # no-nonsense aims, multiply
-    myStart::Vector # highest priority
-    kick::Vector #*
-    fFS::Vector # *free foreign start
-    aFS::Vector # *avoid foreign start
-    aGS::Vector # *avoid goal shuffling
-    eG::Vector # *enter goal
-    fP::Vector # *my furthest-ahead piece
-end
 
-function gatherIntelligence(gm::Game)
-    Intelligence(myPiecePositionStruct(gm), # bfs (PPS)
-                 bf2pf.(vcat(bfs.inGoal, bfs.inGame), whoseTurn(gm)), #pfs
-                 pf2bf.(pfs .+ d, whoseTurn(gm)), # aim bfs
-                 aimBfs .!= -1 # aims44 
-                 # other vectors
-                 # true if a piece is on a player's own start field
-    #on1 = pfs .== 1
-
-
-    # index of whetehr the player themselves is not the aim fileds
-    # if they're on, returns 0/false
-    #selfOnAim = [!iOnBf(gm, i) for i in aimBfs]
-    # selfOnAim = (!).(iOnBf.(gm, aimBfs))
-
-    # index of whetehr another player is not the aim fileds
-    # if they're on, returns 1/true
-    #otherOnAim = [!otherOnBf(gm, i) for i in aimBfs]
-
-    
-    # true for a piece on a player's own start field
-    #onOtherStartField = [i in [11, 21, 32] for i in pfs]
-
-    # true is piece on goal field
-    #onGoalField = pfs .> 40
-    
-                 )
-end
+pieceWeights(s::Strategy, itl::Intelligence) = sum(s.sWeights' .* itl.weights, dims=[2]) .* itl.aims44 .* itl.iOnAim
 
 """
 ```
@@ -164,14 +230,17 @@ Roll die and decide what to do.
 function rollAndMove!(gm, att=1)
     # roll a die
     d = rand(1:6)
-    #d = 6 # for debug
-    itg = gatherIntelligence(gm)
+    #d = 3 # for debug
+    println("Rolled a $d.")
+    itg = gatherIntelligence(gm, d)
 
     if d == 6
-        if length(itg.bfs.waiting) > 0 # any waiting to move out?
-            if 1 in pfs # if current pl on their start
-                # ADD! chooseAndMove!(itg, gm.players[whoseTurn(gm)], att, d)
+        if length(itg.pps.waiting) > 0 # any waiting to move out?
+            if 1 in itg.pfs # if current pl on their start
+                println("I'm on my start!")
+                chooseAndMove!(itg, gm, att, d)
                 gm.turn += 1
+                println("Rolled a 6, second turn!")
                 rollAndMove!(gm) # 2nd turn
                 return nothing
             else # curent pl not on their start, move out!
@@ -181,17 +250,18 @@ function rollAndMove!(gm, att=1)
                              )
 
                 gm.turn += 1
+                println("Rolled a 6, second turn!")
                 rollAndMove!(gm) # 2nd turn
                 return nothing
             end
         else # no-one's waiting
-            # ADD chooseAndMove!(itg, gm.players[whoseTurn(gm)], att, d)
+            chooseAndMove!(itg, gm, att, d)
             gm.turn += 1
             rollAndMove!(gm)  # 2nd turn
             return nothing
         end
-    else
-        # ADD! chooseAndMove!(itg, gm.players[whoseTurn(gm)], att, d)
+    else # no 6
+        chooseAndMove!(itg, gm, att, d)
     end
     return nothing
 

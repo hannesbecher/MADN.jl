@@ -26,6 +26,12 @@ export setupGame,
        kickOut,
        moveAndKick!,
        rollAndMove!,
+       gatherIntelligence,
+
+       Strategy,
+       makeStrategy,
+       pieceWeights,
+       Player,
        
        Game
 
@@ -37,9 +43,11 @@ export setupGame,
 include("pieces.jl")
 include("players.jl")
 
+include("utils.jl")
+
 include("game.jl")
 
-include("utils.jl")
+
 
 include("printing.jl")
 

@@ -18,7 +18,7 @@ function pf2bf(pf, pl)
     # No error is thrown if the pf is nonsense!
     if 0 < pf < 41 # in game
         return mod1((pf + (pl - 1) * 10), 40)
-    elseif 56 < pf < 73 # goal field
+    elseif 40 < pf < 45 # goal field
         return pf + 16 + (pl-1)*4
     end
     return -1
@@ -70,7 +70,10 @@ end
 Base.show(io::IO, mps::PPS) = print(io, "(Waiting: ", mps.waiting, ", In game: ", mps.inGame, ", In goal: ", mps.inGoal, ")")
 
 """
-A type to store where one player's pieces are on the board
+```
+    piecePositionStruct(gm, pl)
+```
+A type to store where one player `pl`'s pieces are on the board in game `gm`.
 """
 function piecePositionStruct(gm, pl)
     PPS(filter(isWaiting, playerPiecePositions(gm, pl)),
@@ -94,6 +97,7 @@ Board field to move a kicked-out of player `pl`piece to
 function kickBackToWhere(gm, pl)
     waitingPieces = piecePositionStruct(gm, pl).waiting
     length(waitingPieces) > 3 && error("Cannot kick when more than 3 pieces are in waiting space.")
+    length(waitingPieces) == 0 && return 37 + 4* pl
     return maximum(waitingPieces) + 1
 end
 
@@ -160,6 +164,7 @@ Kick out a piece from board field `bf` of game `gm` to its corresponding waiting
 """
 function kickOut(gm, bf)
     # add recording corde here
+    println("Kicking BF $bf")
     swapPieces!(gm,
     bf,
     kickBackToWhere(gm, playerOnBF(gm, bf))
@@ -173,7 +178,7 @@ end
 Move piece in game `gm` from board field `fr` to `to`. Kick out of there is apiece on `to`.
 """
 function moveAndKick!(gm, fr, to)
-    otherOnBF(gm, to) && kickOut(gm, to)
+    otherOnBf(gm, to) && kickOut(gm, to)
     swapPieces!(gm, fr, to)
 end
 
