@@ -164,7 +164,7 @@ Kick out a piece from board field `bf` of game `gm` to its corresponding waiting
 """
 function kickOut(gm, bf)
     # add recording corde here
-    println("Kicking BF $bf")
+    #println("Kicking BF $bf")
     swapPieces!(gm,
     bf,
     kickBackToWhere(gm, playerOnBF(gm, bf))
@@ -180,6 +180,11 @@ Move piece in game `gm` from board field `fr` to `to`. Kick out of there is apie
 function moveAndKick!(gm, fr, to)
     otherOnBf(gm, to) && kickOut(gm, to)
     swapPieces!(gm, fr, to)
+    # test if finished
+    if hasPlFinished(gm, gm.whoseTurn)
+        # finishing proc
+        push!(gm.finishingOrder, gm.whoseTurn)
+    end
 end
 
 """
@@ -188,7 +193,7 @@ end
 ```
 Test whether player `pl` in game `gm` has gaps in their goal. I.e., whether there are pieces on their goal fields one (or more) of which could be moved further.
 """
-function gapsInGoal(gm, pl)
+function gapsInGoal(gm, pl::Int)
     pfs = bf2pf.(piecePositionStruct(gm, pl).inGoal, pl) # get piece positions in goan and convert to player fields
     length(pfs) < 1 && error("There seem to be no pieces in player $pl's goal.")
     return minimum(pfs) < 45 - length(pfs)

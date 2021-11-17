@@ -35,6 +35,7 @@ mutable struct Game
     whoseTurn::Int
     players::Vector{Player}
     # useful for two-player games with opposite players and to check which start fields are 'active'
+    finishingOrder::Vector{Int}
     playerPos::Vector{Int} 
 end
 
@@ -62,7 +63,7 @@ Base.show(io::IO, gm::Game) = print(io, "Game object (Turn: ", gm.turn, ", Whose
 Generate a Game object with `nPl` players.
 """
 function setupGame(nPl)
-    return Game(makeBoard(nPl), 1, 1, [Player() for i in 1:4], [1, 2, 3, 4])
+    return Game(makeBoard(nPl), 1, 1, [Player() for i in 1:4], Int[], [1, 2, 3, 4])
 end
 
 """
@@ -73,6 +74,10 @@ The function called each turn to update the game's state.
 """
 function oneTurn!(gm::Game; prnt=false)
     
+    if gm.whoseTurn in gm.finishingOrder
+        gm.whoseTurn = mod1(gm.whoseTurn + 1, 4)
+        return nothing
+    end
     # roll die and decide what to do
     rollAndMove!(gm)
     
@@ -141,18 +146,18 @@ function gatherIntelligence(gm::Game, d)
     aims = pf2bf.(pfs .+ d, whoseTurn(gm)) # these are board fields
     isInGoal = pfs .> 40
     aimInGoal = (pfs .+ d) .> 40
-    println("In Game: $(length(pps.inGame))")
+    #println("In Game: $(length(pps.inGame))")
     if length(pps.waiting) < 4
-        println("Some inGame")
+        #println("Some inGame")
         pfs .== 1#myStart
         map(x -> otherOnBf(gm, x), aims)
         map(x -> x in [11, 21, 31], pfs)
         map(x -> x+d in [11, 21, 31], pfs)
         isInGoal .& aimInGoal
         (!).(isInGoal) .& aimInGoal
-        println("Collect bit")
+        #println("Collect bit")
         collect(pfs .== maximum(pfs))
-        println("Collect bit done")
+        #println("Collect bit done")
         return Intelligence(pps, # PPS (has board fields)
                      bfs,
                      pfs, # player fields of inGame and inGoal
@@ -172,7 +177,7 @@ function gatherIntelligence(gm::Game, d)
                      
         )
     else
-        println("None inGame")
+        #println("None inGame")
         return Intelligence(pps, # PPS (has board fields)
         bfs,
         pfs, # player fields of inGame and inGoal
@@ -195,14 +200,29 @@ end
 To be called by rollAndMove to pick which piece to move (if any) given player `pl`'s strategy.
 """
 function chooseAndMove!(itg::Intelligence, gm::Game, att, d)
-    if (length(itg.bfs) == 0)
+    if (length(itg.bfs) == 0) # i.e. non in game or goal
         if att < 3
             rollAndMove!(gm, att+1)
         end
         return nothing
     end
+    #println(itg)
     pw = pieceWeights(gm.players[gm.whoseTurn].strategy, itg)
-    println(pw) # for debug
+    #println(pw) # for debug
+    if all(pw .== 0) # none can be moved
+        #println("All weights are zero!")
+        if length(itg.pps.inGame) == 0 
+            #println("Only pieces in goal (and waiting).")
+            if !gapsInGoal(gm, gm.whoseTurn)
+                #println("No gaps in goal.")
+                if att < 3
+                    rollAndMove!(gm, att+1)
+                end
+            end
+        end
+
+        return nothing
+    end
     scInd = findall(x -> x == maximum(pw), pw)
     indVec = collect(1:length(itg.pfs))[scInd] # indices of highest weights
     ind = ifelse(length(indVec) > 1, rand(indVec), indVec[1]) # in case of ties, select randomly
@@ -219,7 +239,7 @@ end
 
 
 
-pieceWeights(s::Strategy, itl::Intelligence) = sum(s.sWeights' .* itl.weights, dims=[2]) .* itl.aims44 .* itl.iOnAim
+pieceWeights(s::Strategy, itl::Intelligence) = (sum(s.sWeights' .* itl.weights, dims=[2]) .+ 1) .* itl.aims44 .* itl.iOnAim
 
 """
 ```
@@ -231,32 +251,34 @@ function rollAndMove!(gm, att=1)
     # roll a die
     d = rand(1:6)
     #d = 3 # for debug
-    println("Rolled a $d.")
+    #println("Rolled a $d.")
     itg = gatherIntelligence(gm, d)
 
     if d == 6
         if length(itg.pps.waiting) > 0 # any waiting to move out?
             if 1 in itg.pfs # if current pl on their start
-                println("I'm on my start!")
+                #println("I'm on my start!")
                 chooseAndMove!(itg, gm, att, d)
                 gm.turn += 1
-                println("Rolled a 6, second turn!")
+                #println("Second turn!")
                 rollAndMove!(gm) # 2nd turn
                 return nothing
             else # curent pl not on their start, move out!
+                #println("Moving out.")
                 moveAndKick!(gm, 
                              startFromWhere(gm, whoseTurn(gm)),
                              pf2bf(1, whoseTurn(gm))
                              )
 
                 gm.turn += 1
-                println("Rolled a 6, second turn!")
+                #println("Second turn!")
                 rollAndMove!(gm) # 2nd turn
                 return nothing
             end
         else # no-one's waiting
             chooseAndMove!(itg, gm, att, d)
             gm.turn += 1
+            #println("Second turn!")
             rollAndMove!(gm)  # 2nd turn
             return nothing
         end
@@ -266,3 +288,5 @@ function rollAndMove!(gm, att=1)
     return nothing
 
 end
+
+
