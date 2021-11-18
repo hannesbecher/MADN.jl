@@ -173,17 +173,35 @@ end
 
 """
 ```
+    recordKick(gm, fr, to)
+```
+Record kicking info to `gm.events`
+"""
+function recordKick(gm, to)
+    push!(gm.events["kickingTurns"], gm.turn)
+    push!(gm.events["kickingWho"], gm.whoseTurn)
+    push!(gm.events["whoField"], bf2pf(to, gm.whoseTurn)) # field were the kick happens in pf notation for who
+    push!(gm.events["kickingWhom"], whoOnBf(gm, to))
+    push!(gm.events["whomField"], bf2pf(to, whoOnBf(gm, to)))
+end
+
+"""
+```
     moveAndKick!(gm, fr, to)
 ```
 Move piece in game `gm` from board field `fr` to `to`. Kick out of there is apiece on `to`.
 """
 function moveAndKick!(gm, fr, to)
-    otherOnBf(gm, to) && kickOut(gm, to)
+    if otherOnBf(gm, to) 
+        kickOut(gm, to)
+        recordKick(gm, to)
+    end
     swapPieces!(gm, fr, to)
     # test if finished
     if hasPlFinished(gm, gm.whoseTurn)
         # finishing proc
-        push!(gm.finishingOrder, gm.whoseTurn)
+        push!(gm.events["finishingOrder"], gm.whoseTurn)
+        push!(gm.events["finishingTurns"], gm.turn)
     end
 end
 

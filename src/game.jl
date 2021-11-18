@@ -35,7 +35,7 @@ mutable struct Game
     whoseTurn::Int
     players::Vector{Player}
     # useful for two-player games with opposite players and to check which start fields are 'active'
-    finishingOrder::Vector{Int}
+    events::Dict
     playerPos::Vector{Int} 
 end
 
@@ -63,7 +63,19 @@ Base.show(io::IO, gm::Game) = print(io, "Game object (Turn: ", gm.turn, ", Whose
 Generate a Game object with `nPl` players.
 """
 function setupGame(nPl)
-    return Game(makeBoard(nPl), 1, 1, [Player() for i in 1:4], Int[], [1, 2, 3, 4])
+    return Game(makeBoard(nPl),
+    1,
+    1,
+    [Player() for i in 1:4], 
+    Dict("finishingOrder" => Int[],
+        "finishingTurns" => Int[], 
+        "kickingTurns" => Int[], 
+        "kickingWho" => Int[],
+        "whoField" => Int[], # field were the kick happens in pf notation for who
+        "kickingWhom" => Int[],
+        "whomField" => Int[]
+    ),
+    [1, 2, 3, 4])
 end
 
 """
@@ -74,7 +86,7 @@ The function called each turn to update the game's state.
 """
 function oneTurn!(gm::Game; prnt=false)
     
-    if gm.whoseTurn in gm.finishingOrder
+    if gm.whoseTurn in gm.events["finishingOrder"]
         gm.whoseTurn = mod1(gm.whoseTurn + 1, 4)
         return nothing
     end
