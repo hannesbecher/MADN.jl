@@ -193,8 +193,8 @@ Move piece in game `gm` from board field `fr` to `to`. Kick out of there is apie
 """
 function moveAndKick!(gm, fr, to)
     if otherOnBf(gm, to) 
-        kickOut(gm, to)
         recordKick(gm, to)
+        kickOut(gm, to)
     end
     swapPieces!(gm, fr, to)
     # test if finished

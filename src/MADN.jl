@@ -1,5 +1,5 @@
 module MADN
-
+using Random
 export setupGame,
        printGameState,
        oneTurn!,
@@ -33,7 +33,9 @@ export setupGame,
        pieceWeights,
        Player,
        
-       Game
+       Game,
+
+       oneGame
 
        
 
@@ -52,5 +54,16 @@ include("game.jl")
 include("printing.jl")
 
 
+
+function oneGame(nPl=4, noPrint=true; seed=nothing)
+    if !isnothing(seed)
+        Random.seed!(seed)
+    end
+    a = setupGame(nPl)
+    while length(a.events["finishingOrder"]) < 3 
+        oneTurn!(a, prnt=!noPrint)
+    end   
+    return a.events
+end
 
 end # MADN
